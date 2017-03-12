@@ -77,6 +77,28 @@ def test_discreteSphericalBesselTransform_loop():
         f_r = inverseDiscreteSphericalBesselTransform(
             f_l_kln_t, kln_nodes, cln_norms, r_grid, ell)
         f_l_kln = forwardDiscreteSphericalBesselTransform(
-            f_r, r_grid, ell, N, kln_nodes=kln_nodes, cln_norms=cln_norms)
+            f_r, r_grid, ell, kln_nodes, cln_norms)
+        print(ell, R, f_l_kln/f_l_kln_t)
+        np.testing.assert_allclose(f_l_kln_t, f_l_kln, rtol=rtol)
+
+
+def test_discreteSphericalBesselTransform_doublediscrete():
+    """Test continuous SBT against analytic result"""
+    rtol = 2e-2
+    NREPEAT = 2
+    for i in range(NREPEAT):
+        R = np.random.uniform(1e0, 1e3, 1)
+        ell = np.random.randint(0, 10)
+        N = np.random.randint(50, 200)
+        kln_nodes, cln_norms = constructGridAndNorms(R, N+1, ell)
+        K = kln_nodes[-1]
+        kln_nodes = kln_nodes[:-1]
+        cln_norms = cln_norms[:-1]
+        rln_nodes, dln_norms = constructGridAndNorms(K, N, ell)
+        f_l_kln_t = np.random.uniform(0, 1, N)
+        f_r = inverseDiscreteSphericalBesselTransform(
+            f_l_kln_t, kln_nodes, cln_norms, rln_nodes, ell)
+        f_l_kln = inverseDiscreteSphericalBesselTransform(
+            f_r, rln_nodes, dln_norms, kln_nodes, ell)
         print(ell, R, f_l_kln/f_l_kln_t)
         np.testing.assert_allclose(f_l_kln_t, f_l_kln, rtol=rtol)

@@ -22,18 +22,11 @@ def constructGridAndNorms(R, N, ell):
     return kln_nodes, cln_norms
 
 
-def forwardDiscreteSphericalBesselTransform(f_r, r_grid, ell, N,
-                                            kln_nodes=None, cln_norms=None):
+def forwardDiscreteSphericalBesselTransform(f_r, r_grid, ell,
+                                            kln_nodes, cln_norms):
     R = r_grid[-1]
-    if kln_nodes is None or cln_norms is None:
-        kln_nodes, cln_norms = constructGridAndNorms(R, N, ell)
-        f_l_kln = continuousSphericalBesselTransform(f_r, r_grid,
-                                                     kln_nodes, ell)
-        return f_l_kln, kln_nodes, cln_norms
-    else:
-        f_l_kln = continuousSphericalBesselTransform(f_r, r_grid,
-                                                     kln_nodes, ell)
-        return f_l_kln
+    f_l_kln = continuousSphericalBesselTransform(f_r, r_grid, kln_nodes, ell)
+    return f_l_kln
 
 
 def inverseDiscreteSphericalBesselTransform(f_l_kln, klns, clns, r_grid, ell):
