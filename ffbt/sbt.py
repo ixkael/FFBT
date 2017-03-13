@@ -48,3 +48,33 @@ def rootsSphericalBesselFunctions(L, N):
         ranges[:-1] = roots[ell, :]
         ranges[-1] = ranges[-2] + ranges[-2] - ranges[-3]
     return roots
+
+
+def fastTransformMatrix(ell1, ell2, N):
+    L = np.max([ell1, ell2]) + 1
+    qlns = rootsSphericalBesselFunctions(L, N)
+    mat = np.zeros((N, N))
+    for i in range(N):
+        for j in range(N):
+            mat[i, j] = np.sqrt(2*np.pi) /\
+                spherical_jn(ell1+1, qlns[ell1, j])**2.0\
+                * spherical_jn(ell1, qlns[ell2, i] * qlns[ell1, j] /
+                               qlns[ell1, -1])
+    return mat
+
+
+def orderCouplingMatrix(ell1, ell2, N, Nr):
+    L = np.max([ell1, ell2]) + 1
+    qlns = rootsSphericalBesselFunctions(L, N)
+    qln1 = qlns[ell1, :]
+    qln2 = qlns[ell2, :]
+    mat = np.zeros((N, N))
+    grid = np.linspace(0, 1, Nr)
+    for i in range(N):
+        for j in range(N):
+            f_r = spherical_jn(ell1, grid*qln1[i]) *\
+                spherical_jn(ell2, grid*qln2[j])
+            val = np.trapz(grid**2 * f_r, x=grid)
+            mat[i, j] = val
+        mat[i, :] *= 2 / spherical_jn(ell1+1, qln1)**2.
+    return mat
