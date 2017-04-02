@@ -30,6 +30,8 @@
 \newcommand{\eqn}[1]{\begin{eqnarray}#1\end{eqnarray}}
 %\renewcommand{\vec}[1]{\bmath{#1}}
 \newcommand{\negsp}[1]{\hspace*{-#1mm}}
+\newcommand{\nside}{{\mathrm{N}_\mathrm{side}}}
+\newcommand{\npix}{{\mathrm{N}_\mathrm{pix}}}
 
 
 \newcommand{\todo}[1]{\textcolor{blue}{[TODO: #1]}}
@@ -47,16 +49,18 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Limitations of  Bayesian frameworks/spectroscopic survey analyses}
  
-\textbf{Current BAO or $P(k)$ analyses} of spectroscopic surveys (\textit{\`a la} BOSS) work in 3D cartesian space in a fixed redshift approximation. 
-They focus on measuring the cartesian anisotropic power spectrum $P(k, \mu)$, but neglect uncertainties due to poisson sampling, mask/weights/selection function, parameters of the various stages (e.g. window function deconvolution and BAO reconstruction). 
+ There are to typical approaches for analyzing spectroscipic surveys: some measuring 2-pt correlation functions (\textit{\`a la} BOSS), and some forward modelling the galaxy distribution (\textit{\`a la} Jasche, Wandelt, Kitaura, et al).
+ 
+\textbf{Current BAO or $P(k)$ analyses} of spectroscopic surveys (\textit{\`a la} BOSS) work in 3D cartesian space in a plane-parallel approximation at fixed redshift (thus neglecting curved-sky and redshift-dependent effects). 
+They focus on measuring the cartesian anisotropic power spectrum $P(k, \mu)$, but neglect uncertainties due to poisson sampling, mask/weights/selection function, and parameters of the various stages (e.g. window function deconvolution and BAO reconstruction). 
 Those are delicately fine-tuned on mocks and are known to affect the robustness of the results. 
-Furthermode, no existing framework can simultaneously run on overlapping surveys. 
-Ongoing and future surveys like eBOSS and DESI would highly benefit from new methodologies with less fine-tuning and fewer approximations, which also exploit the overlap with existing surveys. 
+Furthermore, no existing framework can simultaneously reconstruct the density field and measure the BAO with overlapping surveys. 
+Ongoing and future surveys like eBOSS and DESI would highly benefit from new methodologies with less fine-tuning and fewer approximations, which can exploit overlapping (new and old) surveys while fully capturing known sources of systematic and statistical uncertainties. 
 This is essential for looking for imprints of primordial physics (especially GR effects and $f_{\mathrm{NL}}$) in the large-scale distribution of galaxies from spectroscopic surveys, ultimately SDSS+BOSS+eBOSS+DESI.
 
 \textbf{Existing forward Bayesian LSS models} (\textit{\`a la} Jasche, Wandelt, Kitaura, et al) are also based on 3D cartesian grids and don't easily map to relativistic redshift angular power spectrum calculations, which live in spherical coordinates. 
 They have never been applied to deep spectroscopic surveys due to computational limitations, and to systematics in the mask/weights/selection function.
-In other words, the sensitivity to the data-model shows up very clearly in those Bayesian frameworks, demonstrating the need for a new way to forward-model galaxy surveys.
+In other words, the sensitivity to the data-model shows up very clearly in those Bayesian frameworks, demonstrating the need for a new way to forward-model spectroscopic surveys.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -64,7 +68,7 @@ In other words, the sensitivity to the data-model shows up very clearly in those
 
 \textbf{What are our questions and overall long-term goals?}
 \begin{itemize}
-\item Can we formulate a simple forward model of galaxy surveys in spherical coordinates, that addresses those limitations? In particular, we would like a model where both the physical and data parts can easily be complexified.
+\item First, can we formulate a simple forward model of galaxy surveys in spherical coordinates, that addresses those limitations? In particular, we would like to start with simple ad-hoc (physical and data) models which can easily be complexified later (\eg start with a lognormal field and eventually replace it with a full N-body run).
 \item On the long term, we would like to obtain constraints on BAOs or the matter power spectrum or large-scale GR of $f_{\mathrm{NL}}$ effects from multiple spectroscopic surveys, which include uncertainties due to various technical parameters, such as masks, weights, window function, and other data and physical systematics.
 \item Ultimately, we can try to extend this to photometric surveys and other types of surveys.
 \end{itemize}
@@ -75,10 +79,10 @@ In other words, the sensitivity to the data-model shows up very clearly in those
 \item We will attempt to measure the BAO, not the full power spectrum, and adopt approximations similar to the official BOSS results: model the BAO from the ratio of a wiggly and de-wiggled power spectra, with various parameters to smear out the peaks and marginalize over the broad-band power.
 \item Instead of measuring the cut-sky anisotropic cartesian power spectrum $P(k,\mu)$, we will sample the spherical Fourier-Bessel coefficients of the full-sky  density field, in a ball including our survey. Thus, we will not have to compute the effect of the window function and deconvolve it, we will simply compare our model to the data where we have data, using a Poisson likelihood. (Depending on the results, we might need to model the systematics weights.)
 \item We will try to add a BAO reconstruction term by modelling the velocity field and displacing the galaxies from real space to redshift space in a forward fashion.
-\item The model will most likely be simple enough that we can use black-box inference tools such as Stan and Edward, which have highly optimized tools for HMC sampling and variational inference.
+\item The model will be simple enough that we can use black-box inference tools such as Stan and Edward, which have highly optimized tools for HMC sampling and variational inference.
 \end{itemize}
 
-\textbf{PROJECT 2}: Infer the systematics weights and combine multiple galaxy samples.
+\textbf{PROJECT 2}: Infer the systematics weights and combine multiple galaxy samples. %We will explore the sampling of the galaxy weights and various effects of spatial systematics, and how they can maybe be inferred directly from the data.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Forward LSS model}
@@ -95,14 +99,14 @@ To forward-model the galaxy distribution observed by a spectroscopic survey, we 
 
 Note that this entire section could be replaced by a forward 2LPT or N-body simulation, in which case we would constrain the primordial power spectrum directly. 
 In this first attempt, we consider a late time model where the density field is directly generated from the matter power spectrum.
-I anticipate this project, if successful, will lead to significant improvements of the data model, and the physical model can eventually be replaced by a forward simulation.
+I anticipate this project, if successful, will lead to significant improvements of the likelihood function, and the physical model can eventually be replaced by a forward simulation.
 
 Let's work with the real-space, three-dimensional, mean-subtracted density field $\delta(\omega, r)$ in spherical coordinates. 
 At this stage we will neglect redshift evolution.
 If we take its continuous Fourier-Bessel transform,
 \eqn{
-	\delta_{\ell m}(k) = \sqrt{\frac{2}{\pi}} \int \d r r^2 \int \d \omega \ \delta(\omega, r) Y_{\ell m}^*(\omega) j_\ell(kr)\\
-	\delta(\omega, r)  = \sqrt{\frac{2}{\pi}} \sum_{\ell = 0}^L \sum_{m = -\ell}^\ell  \int \d k k^2  \ \delta_{\ell m}(k)Y_{\ell m}(\omega) j_\ell(kr).
+	\delta_{\ell m}(k) = \sqrt{\frac{2}{\pi}} \int \d r r^2 \int \d \omega \ \delta(\omega, r) Y_{\ell m}^*(\omega) j_\ell(kr)\
+	\quad\quad \delta(\omega, r)  = \sqrt{\frac{2}{\pi}} \sum_{\ell = 0}^L \sum_{m = -\ell}^\ell  \int \d k k^2  \ \delta_{\ell m}(k)Y_{\ell m}(\omega) j_\ell(kr).
 }
 By isotropy and homogeneity (and the properties of the 3D Fourier and Fourier-Bessel transforms) we can show that
 \equ{
@@ -115,58 +119,76 @@ We will pixelize/voxelize $\delta$ in voxels $V_i$, and use $\delta_i=\int_{V_i}
 We will never explicitly evaluate this integral, but rather rely on a sampling theorem to directly produce the $\delta_i$s from Fourier-Bessel coefficients.
 As shown in appendixes, we can switch from continuous to discrete Fourier-Bessel transform under minor assumptions, and compute 
 \eqn{
-	\delta_i = \delta(\omega_i, r_i) = \sum_{\ell = 0}^L \sum_{m = -\ell}^\ell \sum_{n = 1}^N c_{\ell m n} \delta_{\ell m}(k_{\ell n}) Y_{\ell m}(\omega_i, r_i) j_\ell(k_{\ell n} r_i)
+	\delta_i = \delta(\omega_i, r_i) = \sum_{\ell = 0}^L \sum_{m = -\ell}^\ell \sum_{n = 1}^N c_{\ell n} \delta_{\ell m}(k_{\ell n}) Y_{\ell m}(\omega_i, r_i) j_\ell(k_{\ell n} r_i)
 }
 where $L$ and $N$ and the angular and radial band limits, respectively.
-The band limits, the nodes $r_i$ and the constants $c_{\ell m n}$ are defined by the number of pixels and $k_\mathrm{max}$ we adopt, as explained in the appendix sections.
+The band limits, the nodes $r_i$ and the constants $c_{\ell n}$ are defined by the number of pixels and $k_\mathrm{max}$ we adopt, as explained in the appendix sections.
 Note that we only need to evaluate the power spectrum on the array of modes $k_{\ell n}$, and we do not need to compute any integrals.
 Predicting the voxelized $\delta$ field from the Fourier-Bessel coefficients $ \delta_{\ell m}(k_{\ell n}) $ (which we will sample) is a linear operation, and we can precompute its matrix representation.
 
-From the Gaussian field of density fluctuations $\delta$, we must construct a positive, biased density field. There are many ways of doing this, which change more or less drastically the properties of the underlying field. For instance,
+From the Gaussian field of density fluctuations $\delta^s$ (the $s$ superscript indicates that we have moved to redshift space, as described in the next section), we must construct a positive, biased density field. There are many ways of doing this, which change more or less drastically the properties of the underlying field. For instance,
 \eqn{
-	\mathrm{Gaussian:}\quad 	\rho_i = 1 + b \delta_i \quad\quad\quad
-	\mathrm{Lognormal:}\quad	\rho_i = \ln(1 + b \delta_i) - \mu_i\quad\quad\quad
-	\mathrm{Logistic:}\quad	\rho_i = \bigl(1 + \exp(-b \delta_i)\bigr)^{-1}
+	\mathrm{Gaussian:}\quad 	\rho_i = 1 + b \delta^s_i \quad\quad\quad
+	\mathrm{Lognormal:}\quad	\rho_i = \ln(1 + b \delta^s_i) - \mu_i\quad\quad\quad
+	\mathrm{Logistic:}\quad	\rho_i = \bigl(1 + \exp(-b \delta^s_i)\bigr)^{-1}
 }
 One could add more parameters to those functions (and adopt a scale-dependent galaxy bias, for example). 
-Note that the power spectrum of $\rho$ is only a biased version of that of $\delta$ in the first case (Gaussian). 
-However, in the first two cases, $\delta_i$ is not constrained to be $>-1/b$, so $\rho_i$ might end up being negative, which is not physically acceptable. 
+Note that the power spectrum of $\rho$ is only a biased version of that of $\delta^s$ in the first case (Gaussian). 
+However, in the first two cases, $\delta^s_i$ is not constrained to be $>-1/b$, so $\rho_i$ might end up being negative, which is not physically acceptable. 
 This is a know problem which is relatively rare when sampling the density field, so we could simply impose this positivity constrain as part of our prior, \ie reject samples that lead to negative density.
 Alternatively, we could adopt a lognormal or logistic model, but we then need to worry about the statistical properties of the field.
 One solution would be to prove that the BAO properties are unaffected by this transformation, and simply marginalize over the broad-band power spectrum, in which case we can adopt either model and not worry about this.
-Another solution is to work out what power spectrum we need to impose on $\delta$ to have $\rho$ follow the matter power spectrum.
+Another solution is to work out what power spectrum we need to impose on $\delta^s$ to have $\rho$ follow the matter power spectrum.
 Luckily, all of those assumptions are easily testable on mocks if we use a black-box inference tool like Stan or Edward.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{The redshift-space transfer function}
 
-First of all, note that if we model the density field via a full forward simulation (LPT or N-body), then this transfer function is trivial, since the particle position in redshift space $\vec{s}$ is related to that in real space $\vec{r}$ via a simple convertion of the radial component (with the angle on the sky $\omega$ unchanged)
+We have described how to generate $\delta$ in real space, and how to convert the redshift space $\delta^s$ into a density $\rho$. We now need to connect the two. 
+
+First of all, note that if we model the density field via a full forward simulation (LPT or N-body), then this transfer function is trivial, since the particle position in redshift space $\vec{s}=(\omega, s) = (\theta, \phi, s)$ is related to that in real space $\vec{r}= (\omega, r)  = (\theta, \phi, r)$ via a simple convertion of the radial component (with the angle on the sky $\omega=(\theta, \phi)$ unchanged)
 \equ{
 	s = r + \vec{v}(\vec{r}) \cdot \vec{u}_r / H(r) = r + v_\parallel(\vec{r}) 
 } 
 where $\vec{v}$ is the 3D velocity at $\vec{r}$. With a detailed simulation, this is a deterministic effect, and redshift-space distortions are fully accounted for (to the limits of the simulation). 
-Note that the so-called BAO reconstruction is also included in such a simulation.
+Note that the so-called BAO reconstruction step is thus included in such a simulation.
 
 However, we are not taking this approach: we merely simulate the density field in a fixed volume. 
 Thus, we need to model redshift-space distortions (RSDs).
+We will operate in Fourier-Bessel space, and mostly follow \cite{Heavens1995}. 
 
-The simplest way to add small-scale RSDs (fingers of god) without running a full forward simulation and resolving the small-scale velocity field is to introduce a radial scattering term $p_\mathrm{fog}(r-r')$ centered around zero with some width (\eg a Gaussian). 
-In this case, we obtain a convolution in real space, or a simple linear coupling of the Fourier-Bessel coefficients, 
+The simplest way to add small-scale RSDs (fingers of god) without running a full forward simulation and resolving the small-scale velocity field is to introduce a radial scattering term $p_\mathrm{fog}(\vec{r}-\vec{r}')$ centered around zero with some width (\eg a Gaussian). 
+In the case of radial perturbations only (which is the case for redshift space distortions) arising from Maxwellian Gaussian random motion of width $\sigma$, we obtain the following linear coupling of the Fourier-Bessel coefficients across $\ell-n-n'$ modes, 
 \eqn{
-	\delta_{\ell m}(k_{\ell n}) &=& \sum_{\ell 'n'} S_{\ell n, \ell'n'} \delta_{\ell' m}(k_{\ell' n'}) 	\\
-	S_{\ell n, \ell'n'}	&=&	\iint  p_\mathrm{fog}( r-y) j_\ell(k_{\ell n}r)  j_\ell(k_{\ell' n'} y)\d r \d y
+	\delta_{\ell m}(k_{\ell n}) &=& \sum_{n'} S_{\ell n n'} \delta_{\ell m}(k_{\ell n'}) 	\\
+	S_{\ell n n'}	&=& \frac{c_{\ell n}c_{\ell n'}}{V \pi}	\iint  \frac{\exp\bigl( -\frac{(r-y)^2}{2\sigma^2} \bigr)}{\sqrt{2\pi}{\sigma}} j_\ell(k_{\ell n}r)  j_\ell(k_{\ell' n'} y) r \d r y \d y
 }
-\todo{Re-derive this}
-We also want to add an extra large-scale displacement to model RSDs better.
+Note that one could adopt any description for $p_\mathrm{fog}$ and suppress the angular component to get the resulting coupling matrix $S_{\ell n n'}$. \todo{add proof}
+
+Small-scale RSDs are not sufficient. 
+We also want to add the large-scale "bulk flow" displacement. 
+This cannot be added as a stochastic construction given the modes it affects and its dependence on the density field.
 This will be similar to the standard BAO reconstruction: we will apply a distortion corresponding to the large-scale displacement field. 
-Thanks to linear theory and the Zel'dovich approximation (ZA), the latter is related to the density field via $\delta(\vec{r}) = -\nabla_{\vec{r}} \cdot \Psi(\vec{r})$. 
+Thanks to linear theory and the Zel'dovich approximation (ZA), the displacement $\Psi$ is related to the density field via $\delta(\vec{r}) = -\nabla_{\vec{r}} \cdot \Psi(\vec{r})$. 
 In 3D Fourier-space, we could compute the large-scale displacement under the ZA as $\Psi(\vec{k}) = \frac{i\vec{k}}{k} \delta(\vec{k}) S(k)$ with $S(k)$ some isotropic large-scale smoothing kernel applied to the density field.
 In our case, in spherical coordinates, we could compute the gradient in real/pixel space. 
-But it is much easier in Fourier-Bessel space, where Heavens et al have shown that it is an other linear mixing of the modes,
+But it is much easier in Fourier-Bessel space, where \cite{Heavens1995} have shown that it is creates a linear mixing of the modes,
 \eqn{
-	\delta_{\ell m}(k_{\ell n}) &=& \sum_{\ell'm'n'} D_{\ell m n, \ell' m' n'}\ \delta_{\ell' m'}(k_{\ell' n'}) 	\\
+	\delta_{\ell m}(k_{\ell n}) &=& \sum_{\ell'm'n'} D_{\ell m n, \ell' m' n'}\ \delta_{\ell' m'}(k_{\ell' n'}) 	
 } 
-\todo{Re-derive this}
+In the case of a full-sky density field with a radial selection function $\rho_0(r)$, we obtain the matrices
+\eqn{
+	D_{\ell m n, \ell' m' n'} &=& \bigl( \Phi_{\ell nn'} + \beta V_{\ell nn'} \bigr) \delta^K_{\ell \ell'}\delta^K_{m m'}	\\
+	 \Phi_{\ell nn'}  =	c_{\ell n}c_{\ell n'}\int	\rho_0(r)	j_\ell(k_{\ell n}r)	j_\ell(k_{\ell n'}r) r^2 \d r	 \
+	&& \quad V_{\ell nn'}  = c_{\ell n}c_{\ell n'}\int	\rho_0(r)	j^\prime_\ell(k_{\ell n}r)	j^\prime_\ell(k_{\ell n'}r) r^2 \d r	
+}
+This is a considerable simplification which exploits the symmetry and physics of the problem, and avoids the use of an angular mask thanks to the forward modeling.
+What approximations does this rely on? 
+It uses linear theory and approximates the redshift space displacement to first order.
+\todo{Put full proof and show how the approximations enter the derivation.}
+\todo{work out how to design DSFB transform and $\rho_0(r)$.}
+\todo{visualize action of those matrices on Fourier-Bessel space.}
+
 In conclusion, we want to design a forward-modeling approach that is very similar to existing BAO measurement pipelines. 
 To include RDSs and BAO reconstruction, we need to compute and apply two mode coupling matrixes $S$ and $D$ to the Fourier-Bessel coefficients before we inverse-transform them into the real space $\delta_i$ values and convert them into $\rho_i$'s. 
 
@@ -183,35 +205,56 @@ where  $\bar{n}$ is the average number density of objects, and we have added $w_
 Note that if we took the limit of infinitely small voxels, we would recover the standard result for a Poisson process, which involves only one integral, that of the density in the entire footprint of the data.
 However, as already mentioned, we avoid this sort of integral by relying on a meaningful discretization of the field, and we use a sampling theorem to directly compute the $\rho_i$s.
 
+This likelihood function could be complexified by parametrizing the weights or changing the Poisson process. 
+This will be investigated in a later phase of the project, to add \eg spatial systematics (impact of seeing and bright stars on the targeting and completeness, etc), fiber collisions, etc.
 
 
 
-\newpage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Summary and inference}
 
-The parameters of our model are: 1) the $NL(L+1)/2$ Fourier-Bessel modes $\{\delta_{\ell m}(k_{\ell n})\}$, 2) the power spectrum $P(k_{\ell n})$ parametrized with the BAO on top of a dewiggled power spectrum with various extra parameters to marginalize out the broad-band information, 3) the bias $b$ and galaxy number density $\bar{n}$, 4) some extra technical parameters for the fingers of god and the smoothing of the density field to compute the displacement.
+The parameters of our model are: 1) given the band-limits $N$, $L$, $R$, and $K$, the $NL(L+1)/2$ complex Fourier-Bessel modes $\{\delta_{\ell m}(k_{\ell n})\}$, so $NL(L+1)$ real numbers, 2) the power spectrum $P(k_{\ell n})$ parametrized with the BAO on top of a dewiggled power spectrum with various extra parameters to marginalize out the broad-band information, 3) the bias $b$ and galaxy number density $\bar{n}$, 4) some extra technical parameters for the fingers of god and the smoothing of the density field to compute the displacement.
 We adopt fixed weights $\{ w_i \}$.
-\todo{Describe those parameters in more details, add the priors, and the way the matter power spectrum is parametrized.}
 
-We don't go into the details of the various priors just yet - we stick to the essential ingredients of the forward model.
-The real-space Fourier-Bessel modes of the density fluctuations are Gaussian in the power spectrum
-\eqn{
-	\delta_{\ell m}(k_{\ell n})	&\sim& \mathcal{N}\bigl(0, P(k_{\ell n})\bigr)
+The pixel-space Fourier-Bessel modes of the density fluctuations are complex numbers which are Gaussian in the power spectrum
+\equ{
+	\mathrm{Real}[\delta_{\ell m}(k_{\ell n})] \ \ \mathrm{and} \ \ \mathrm{Img}[\delta_{\ell m}(k_{\ell n})] 	\ \sim \ \mathcal{N}\bigl(0, P(k_{\ell n})/2\bigr)	\quad \quad \ell=0, \dots, L\quad m=0,\dots,\ell\quad n=1,\dots,N
 	}
+where $L$ and $N$ are the angular and radial band-limits, respectively. They set the positions of the centers of the voxels. 
+Note that the $m=0$ modes have no imaginary parts and must be drawn from $ \mathcal{N}\bigl(0, P(k_{\ell n})\bigr)$.
+Furthermore, since the $\delta$ field is real in pixel space we have $\delta_{\ell -m}(k_{\ell n}) = (-1)^m \delta_{\ell m}^*(k_{\ell n})$.
+
+A classic parametrization of the power spectrum is 
+\eqn{
+	P(k) &=&  \left( \frac{P^\mathrm{linear}(k)}{P^\mathrm{EiseHu}(k)}-1 \right)C(k)
+}
+where $C(k)$ is a broad-band continuum contribution, for example $C(k) = a + bk + ck^2$. It could also include a smoothing term to account for non-linear smearing of the BAO.
+The point of this approach is to only constrain the BAO feature, and marginalize over any other broad-band distortion.
+
 The redshift-space coefficients are obtained by applying mixing the real-space coefficients with the RSD matrices $S$ and $D$, which are precalculated.
-The pixelized redshift-space density fluctuations $\delta_i$ are obtained by performing an inverse Fourier-Bessel transform, which is deterministic and also a linear operation with a matrix which can be precalculated.
-\textbf{In other words, the full conversion from an array of real-space Fourier-Bessel coefficients to redshift-space voxelized density fluctuations is a linear operation, where the matrix can be precalculated and only depends on the band-limits under consideration.}
-Converting $\delta_i$ into $\rho_i$ is also deterministic and fast. 
+\eqn{
+	\delta^\mathrm{s}_{\ell m}(k_{\ell n}) &=& \sum_{n'} S_{\ell n n'} \sum_{n''} \bigl( \Phi_{\ell n'n''} + \beta V_{\ell n'n''} \bigr) \delta^\mathrm{r}_{\ell m}(k_{\ell n''}) 	
+} 
+
+The pixelized redshift-space density fluctuations $\delta_i$ are obtained by performing an inverse Fourier-Bessel transform, which is deterministic and also a linear operation with a matrix $T$ which can be precalculated.
+\eqn{
+	\delta^\mathrm{s}_i &=& \sum_{\ell'm'n'} T_{i, \ell' m' n'}\ \delta^\mathrm{s}_{\ell' m'}(k_{\ell' n'}) 	
+} 
+\todo{Derive those matrices.}
 The final Poisson likelihood in each pixel is simply
 \eqn{
 	N_i &\sim& \mathrm{Poisson}\bigl( w_i \bar{n} \rho_i  \bigr)
 }
+Converting $\delta_i$ into $\rho_i$ is also deterministic and fast. 
 If we adopt a simple model such as $\rho_i = 1 + b \delta_i$, the previous $P(k)$ is the matter power spectrum, and $b$ is the linear galaxy bias. 
-But we will have to impose that $b \delta_i > -1$ via our priors.
-The lognormal model is similar, but $P(k)$ will be a (simple) deterministic function of the matter power spectrum, and we will also have to impose $b \delta_i > -1$.
-If we adopt a more exotic model with a positivity condition (\eg logistic) then we can drop this condition, but $P(k)$  might depend in non-trivial ways on the matter power spectrum.
-\todo{Work those out.}
+But we will have to impose
+\equ{
+	1 + b \delta_i > 0
+}
+ via our priors.
+The lognormal model is similar, but $P(k)$ will be a (simple) deterministic function of the matter power spectrum.
+If we adopt a more exotic model with a positivity condition (\eg logistic) then we can drop the previous positivity condition, but $P(k)$  might depend in non-trivial ways on the matter power spectrum.
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -236,6 +279,12 @@ Our method offers a significant amount of freedom. In particular, the three tran
 \end{itemize}
 
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Alternative approach}
+
+\todo{Work out alternative approach where $\delta_{\ell m}(z)$ is drawn from $C_\ell(z, z')$.}
+
 \newpage
 \appendix
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -243,7 +292,7 @@ Our method offers a significant amount of freedom. In particular, the three tran
 
 \todo{Reformat and clarify this section.}
 
-The continuous spherical Bessel transform over any domain
+The continuous spherical Bessel transform maps $r\in\mathbb{R}^+$ to $k\in\mathbb{R}^+$ given a parameter $\ell$ via
 \eqn{
 	F_\ell(k)  &=& \sqrt{\frac{2}{\pi}} \int   j_\ell(k r) f(r) r^2 \d r  \\
 	f(r) &=& \sqrt{\frac{2}{\pi}} \int   j_\ell(k r) F_\ell(k) k^2 \d k.
@@ -257,14 +306,14 @@ We can use this property to derive the following analytic solution for a particu
 \eqn{
 	f(r)= \ r^{s}  &\ \longrightarrow \ &		F_\ell(k) = \frac{2^{s+\frac{3}{2}}}{k^{s+3}} \frac{\Gamma\bigl(\frac{3+\ell+s}{2}\bigr)}{\Gamma\bigl(\frac{\ell-s}{2}\bigr)}.
 }
-The discrete spherical Bessel transform over a finite domain $[0, R]$ reads
+The transform can  be discretized if we impose boundary conditions on $f$ or its derivatives at a boundary $R$, so that we only need to integrate it in the interval $[0, R]$. In this case, we can construct a discrete spherical Bessel transform \citep{Fisher1994},
 \eqn{ 
-	f(r) &=& \sum_{n=1}^\infty  c_{R \ell n}  j_\ell(k_{\ell n} r) F_\ell(k_{\ell n}) \\
-	F_\ell(k_{\ell n}) &=& \sqrt{\frac{2}{\pi}} \int_0^R   j_\ell(k_{\ell n} r) f(r) r^2 \d r .
+	f(r) &=& \sum_{n=1}^\infty  c_{\ell n}  j_\ell(k_{\ell n} r) F_\ell(k_{\ell n}) \\
+	F_\ell(k_{\ell n}) &=& \sqrt{\frac{2}{\pi}} \int_0^R  j_\ell(k_{\ell n} r) f(r) r^2 \d r .
 }
-The nodes $k_{\ell n}$ and weights $c_{R \ell n}$ must be defined carefully to obtain a valid transform. This is achieved with by using the closure relation
+The nodes $k_{\ell n}$ and weights $c_{\ell n}$ must be defined carefully to obtain a valid transform by using the closure relation
 \eqn{
-	F_\ell(k_{\ell n}) &=& \sqrt{\frac{2}{\pi}}  \sum_{m=1}^\infty c_{R \ell m}F_\ell(k_{\ell m})  \underbrace{\int_0^R j_\ell(k_{\ell n} r)  j_\ell(k_{\ell m} r) r^2 \d r}_{ = R  C(\ell, Rk_{\ell m}, Rk_{\ell m})}
+	F_\ell(k_{\ell n}) &=& \sqrt{\frac{2}{\pi}}  \sum_{m=1}^\infty c_{\ell n}F_\ell(k_{\ell m})  \underbrace{\int_0^R j_\ell(k_{\ell n} r)  j_\ell(k_{\ell m} r) r^2 \d r}_{ = R  C(\ell, Rk_{\ell m}, Rk_{\ell m})}
 }	
 where we have defined the coupling coefficients
 \eqn{
@@ -272,9 +321,9 @@ where we have defined the coupling coefficients
 }
 
 One defines a valid transform by requiring that $  R  C(\ell, Rk_{\ell m}, Rk_{\ell m})= \sqrt{\frac{\pi}{2}} \delta^K_{m n} c^{-1}_{R\ell n}$ via an adequate definition of $k_{\ell n}$. We can see that we need to construct  $k_{\ell n}$ such that $A j^\prime_\ell( k_{\ell n} R) = B j_\ell( k_{\ell n} R)  / ( k_{\ell n} R)$ with arbitrary constants $A$ and $B$.  
-\todo{cite fisher and lahav}. 
+This is all nicely detailed in \cite{Fisher1994}.
 
-By writing the same finite expansion in Fourier space, one can define a symmetric fast transform. 
+By writing the same finite expansion in Fourier space, one can define a symmetric discrete transform, as described in \cite{Lanusse2012}. 
 The nodes are defined from the roots of the bessel functions as $q_{\ell n}  = \frac{k_{\ell m}}{R} = \frac{r_{\ell m}}{K_\ell}$, so $K_\ell R = q_{\ell N}$ with
 $C(\ell, q_{\ell m}, q_{\ell m})$ with the number of coefficients is fixed to a finite number $N$, the band limit. 
 For zero boundary conditions, one can write a matrix fast transform
@@ -298,7 +347,24 @@ with the matrix
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Continuous and discrete 3D Fourier-Bessel transforms}
+\section{3D Fourier-Bessel transforms}
+
+The discrete Fourier-Bessel transforms read
+\eqn{
+	\delta(\vec{r}_i) = \delta(\omega_i, r_i) \ &=& \ \sum_{n=1}^\infty  \sum_{\ell = 0}^\infty \sum_{m = -\ell}^\ell  c_{\ell n}    \delta_{\ell m}(k_{\ell n})Y_{\ell m}(\omega_i) j_\ell(k_{\ell n}r_i) \\
+	&=& \ \sum_{n=1}^\infty  c_{\ell n} f_\ell(\omega_i, k_{\ell n})  j_\ell(k_{\ell n}r_i) \ = \ \sum_{\ell = 0}^\infty \sum_{m = -\ell}^\ell  f_{\ell m}(r_i) Y_{\ell m}(\omega_i) \\
+	\delta_{\ell m}(k_{\ell n}) \ &=&\ \sqrt{\frac{2}{\pi}} \int_0^R \d r r^2 \int_{\mathrm{S}^2} \d \omega \ \delta(\omega, r) Y_{\ell m}^*(\omega) j_\ell(k_{\ell n}r)\\
+	&=&\ \sqrt{\frac{2}{\pi}} \int_0^R \d r r^2  \delta_{\ell m}(r)  j_\ell(k_{\ell n}r) \ = \int_{\mathrm{S}^2} \d \omega \ \delta_\ell(\omega, k_{\ell n}) Y_{\ell m}^*(\omega) 
+}
+where the second lines are intermediate transforms and show the intermediate fields involved. 
+This exploit the same separability of the Fourier-Bessel transform as \cite{Leistedt2012}.
+So far this has no approximation, it is merely imposing boundary conditions on $f$ at some $r=R$. The first natural approximation to make is to truncate the summation to some radial and angular band limits $N$ and $L$.
+
+We first approximate the forward spherical harmonics transform. We use the Healpix grid, so there are well established rules for picking the band limit $L$ and the resolution parameter $\nside$. In particular, the sampling is uniform on the sphere and creates $\npix = 12\mathrm{N}^2_\mathrm{side}$ equal-area pixels.
+
+\eqn{
+	\int_{\mathrm{S}^2} \d \omega \ f(\omega) Y_{\ell m}^*(\omega)  \approx  \frac{4\pi}{\npix}  \sum_{i=1}^\npix Y_{\ell m}^*(\omega_i)  f(\omega_i)
+}
 
 \todo{Write.}
 
