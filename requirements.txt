@@ -1,0 +1,7 @@
+numpy
+cython
+pytest
+pep8
+matplotlib
+coveralls
+sphinx

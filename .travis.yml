@@ -1,0 +1,32 @@
+notifications:
+  email:
+    on_failure: always
+    on_success: change
+language: python
+cache:
+ directories:
+  - $HOME/miniconda
+  - $HOME/virtualenv
+env:
+  global:
+  - CACHE_DIR="$HOME/virtualenv"
+  - MINICONDA_DIR="$HOME/miniconda"
+python:
+  - "3.5"
+before_install:
+  - . install_conda_pip.sh
+install:
+  - sudo apt-get update
+  - python setup.py build_ext --inplace
+  - python setup.py install
+before_script:
+  - pwd
+  - ls codename
+  - python -c "from codename.utils import *"
+  - export PYTHONPATH=$PYTHONPATH:$(pwd)
+script:
+  - coverage run --source codename -m py.test
+  - pep8 codename/*py
+  - pep8 tests/*py
+after_success:
+  coveralls

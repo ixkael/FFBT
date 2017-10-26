@@ -12,7 +12,7 @@ from ffbt.sht import *
 def test_healpixMatrixTranform():
     """Test that matrix form agrees with healpy anafast routines"""
 
-    rtol = 5e-2
+    rtol = 1e-1
 
     nside = 32
     L = 1*nside//2
