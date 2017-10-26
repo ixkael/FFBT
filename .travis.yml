@@ -25,7 +25,5 @@ before_script:
   - export PYTHONPATH=$PYTHONPATH:$(pwd)
 script:
   - coverage run --source ffbt -m py.test
-  - pep8 ffbt/*py
-  - pep8 tests/*py
 after_success:
   coveralls
