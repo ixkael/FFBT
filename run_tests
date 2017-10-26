@@ -1,4 +1,4 @@
-coverage run --source codename -m py.test
-pep8 codename/*py
+coverage run --source ffbt -m py.test
+pep8 ffbt/*py
 pep8 tests/*py
 coverage report

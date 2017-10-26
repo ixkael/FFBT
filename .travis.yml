@@ -21,12 +21,11 @@ install:
   - python setup.py install
 before_script:
   - pwd
-  - ls codename
-  - python -c "from codename.utils import *"
+  - ls ffbt
   - export PYTHONPATH=$PYTHONPATH:$(pwd)
 script:
-  - coverage run --source codename -m py.test
-  - pep8 codename/*py
+  - coverage run --source ffbt -m py.test
+  - pep8 ffbt/*py
   - pep8 tests/*py
 after_success:
   coveralls
