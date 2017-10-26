@@ -79,7 +79,7 @@ def test_discreteSphericalBesselTransform_loop():
             f_l_kln_t, kln_nodes, cln_norms, r_grid, ell)
         f_l_kln = forwardDiscreteSphericalBesselTransform(
             f_r, r_grid, ell, kln_nodes, cln_norms)
-        print(ell, R, f_l_kln/f_l_kln_t)
+        print(ell, R, f_l_kln, f_l_kln_t)
         np.testing.assert_allclose(f_l_kln_t, f_l_kln, rtol=rtol)
 
 
@@ -100,7 +100,7 @@ def test_discreteSphericalBesselTransform_doublediscrete():
             f_l_kln_t, kln_nodes, cln_norms, rln_nodes, ell)
         f_l_kln = inverseDiscreteSphericalBesselTransform(
             f_r, rln_nodes, dln_norms, kln_nodes, ell)
-        print(ell, R, f_l_kln/f_l_kln_t)
+        print(ell, R, f_l_kln, f_l_kln_t)
         np.testing.assert_allclose(f_l_kln_t[:-1], f_l_kln[:-1], rtol=rtol)
 
 
@@ -119,7 +119,7 @@ def test_discreteSphericalBesselTransform_fast():
         mat = fastTransformMatrix(ell, ell, N)
         f_r = np.dot(mat, f_l_kln_t) / R**3
         f_l_kln = np.dot(mat, f_r) / K**3
-        print(ell, K, f_l_kln/f_l_kln_t)
+        print(ell, K, f_l_kln, f_l_kln_t)
         np.testing.assert_allclose(f_l_kln[:-1], f_l_kln_t[:-1], rtol=rtol)
 
 
@@ -185,69 +185,3 @@ def test_couplingMatrix_fast():
         f_l1_k2 = np.dot(cou12, f_l2_k)
         print(R, ell1, ell2, N, f_l1_k2[:-1]/f_l1_k[:-1])
         np.testing.assert_allclose(f_l1_k2[:-1], f_l1_k[:-1], rtol=rtol)
-
-
-def test_healpixMatrixTranform():
-    """Test that matrix form agrees with healpy anafast routines"""
-
-    rtol = 2e-2
-
-    nside = 16
-    L = 1*nside//2
-    N = np.random.randint(10, 100)
-    Lt = L*(L+1)//2
-    f_lm_t = np.random.uniform(0, 1, size=Lt) +\
-        1j*np.random.uniform(0, 1, size=Lt)
-    for l in range(L):
-        f_lm_t[l] = np.random.uniform(0, 1)
-
-    f_ang = hp.alm2map(f_lm_t, nside, lmax=L-1, verbose=False)
-    f_lm2 = hp.map2alm(f_ang, lmax=L-1)
-    np.testing.assert_allclose(f_lm2, f_lm_t, rtol=rtol)
-
-    mat, fac = healpixMatrixTransform(L, nside)
-
-    matmat = np.dot(np.conjugate(mat), mat.T) * fac
-    eye = np.eye(Lt)
-    np.testing.assert_allclose(matmat, eye, atol=1e-1)
-
-    f_lm_c = 1*f_lm_t
-    f_lm_c[:L] /= 2
-    pr = np.dot(mat.T, f_lm_c)
-    f_ang3 = (pr + np.conjugate(pr)).astype(float)
-    # f_ang3 = (np.dot(mat.T, f_lm_t) +
-    #          np.conjugate(np.dot(mat[L:, :].T, f_lm_t[L:]))).astype(float)
-    f_lm3 = fac * np.dot(np.conjugate(mat), f_ang3)
-    np.testing.assert_allclose(f_lm3, f_lm_t, rtol=rtol)
-
-
-@pytest.mark.skip("Too hard to pass without proper benchmark tests")
-def test_slowFourierBesselTransform():
-    """Test slow Fourier-Bessel transform"""
-    rtol = 1e-1
-    NREPEAT = 1
-    for i in range(NREPEAT):
-        R = 10  # np.random.uniform(1e-1, 1e1, 1)
-        Nr = 1000  # np.random.randint(1000, 2000)
-        N = 300  # np.random.randint(10, 100)
-        nside = 8
-        l0 = np.random.randint(0, 3)
-        L = nside//2
-        Lt = L*(L+1)//2
-        f_lmn_t = np.random.uniform(0, 1, Lt*N) +\
-            1j*np.random.uniform(0, 1, Lt*N)
-        f_lmn_t = f_lmn_t.reshape((Lt, N))
-        for l in range(L):
-            f_lmn_t[l, :] = np.random.uniform(0, 1, N)
-
-        shatmat, fac = healpixMatrixTransform(L, nside)
-        qlns = rootsSphericalBesselFunctions(L+1, N)
-        f_angr = inverseFourierBesselTransform(f_lmn_t, L, nside,
-                                               R, l0, qlns, shatmat)
-        f_lmn = forwardFourierBesselTransform(f_angr, L,
-                                              R, l0, Nr, qlns, shatmat)
-        f_lmn *= fac
-        print(np.mean(f_lmn/f_lmn_t))
-        print(np.mean(f_lmn/f_lmn_t, axis=1))
-        print(np.mean(f_lmn/f_lmn_t, axis=0))
-        np.testing.assert_allclose(f_lmn, f_lmn_t, rtol=rtol)
