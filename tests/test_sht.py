@@ -12,10 +12,11 @@ from ffbt.sht import *
 def test_healpixMatrixTranform():
     """Test that matrix form agrees with healpy anafast routines"""
 
-    rtol = 1e-1
+    rtol = 1e-2
 
     nside = 32
-    L = 1*nside//2
+    L = nside // 4
+
     N = np.random.randint(10, 100)
     Lt = L*(L+1)//2
     f_lm_t = np.random.uniform(0, 1, size=Lt) +\

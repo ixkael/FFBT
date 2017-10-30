@@ -65,22 +65,23 @@ def test_rootsSphericalBesselFunctions():
 
 def test_discreteSphericalBesselTransform_loop():
     """Test discrete SBT back and forth"""
-    rtol = 2e-2
-    NREPEAT = 2
-    for i in range(NREPEAT):
-        R = np.random.uniform(1e0, 1e3, 1)
-        ell = np.random.randint(0, 10)
-        Nr = np.random.randint(5000, 10000)
-        N = np.random.randint(5, 100)
-        r_grid = np.logspace(-4, np.log10(R), Nr)
-        f_l_kln_t = np.random.uniform(0, 1, N)
-        kln_nodes, cln_norms = constructGridAndNorms(R, N, ell)
-        f_r = inverseDiscreteSphericalBesselTransform(
-            f_l_kln_t, kln_nodes, cln_norms, r_grid, ell)
-        f_l_kln = forwardDiscreteSphericalBesselTransform(
-            f_r, r_grid, ell, kln_nodes, cln_norms)
-        print(ell, R, f_l_kln, f_l_kln_t)
-        np.testing.assert_allclose(f_l_kln_t, f_l_kln, rtol=rtol)
+    rtol = 1e-2
+    NREPEAT = 1
+    L = 10
+    for ell in range(L):
+        for i in range(NREPEAT):
+            R = np.random.uniform(1e-1, 1e3, 1)
+            Nr = np.random.randint(5000, 10000)
+            N = np.random.randint(5, 100)
+            r_grid = np.logspace(-4, np.log10(R), Nr)
+            f_l_kln_t = np.random.uniform(0, 1, N)
+            kln_nodes, cln_norms = constructGridAndNorms(R, N, ell)
+            f_r = inverseDiscreteSphericalBesselTransform(
+                f_l_kln_t, kln_nodes, cln_norms, r_grid, ell)
+            f_l_kln = forwardDiscreteSphericalBesselTransform(
+                f_r, r_grid, ell, kln_nodes, cln_norms)
+            print(ell, R, Nr, N)
+            np.testing.assert_allclose(f_l_kln_t, f_l_kln, rtol=rtol)
 
 
 def test_discreteSphericalBesselTransform_doublediscrete():
