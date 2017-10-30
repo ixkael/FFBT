@@ -1,10 +1,27 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
+import healpy as hp
 
 from ffbt.sht import *
 from ffbt.sbt import *
 
+
+def forwardFourierBesselTransformMatrix(f_lmn, clnmat, sbtmat, shamat):
+    return np.sum(
+        clnmat[:, :, None, None] *\
+        sbtmat[:, :, None, :] *\
+        shamat[:, None, :, None] *\
+        f_lmn[:, :, None, None],
+            axis=(0, 1))
+
+def inverseFourierBesselTransformMatrix(f_angr, clnmat, sbtmat, shamat, domega, dr, rs_grid_mid):
+    return np.sqrt(2/np.pi) * np.sum(
+        domega * (dr*rs_grid_mid**2)[None, None, None, :] *\
+        sbtmat[:, :, None, :] *\
+        shamat[:, None, :, None].conjugate() *\
+        f_angr[None, None, :, :],
+            axis=(2, 3))
 
 def forwardFourierBesselTransform(f_angr, L, R, l0, Nr, qlns, shamat):
     r_grid = np.logspace(-8, np.log10(R), Nr)
@@ -108,5 +125,30 @@ def fourierBesselTransformMatrix_approx(L, nside, R, l0, qlns, shamat, Nr, fac):
             sfbmat[i, :, :, :] *= np.dot(cou, sbtmat)[:, None, :] / K**3
     return sfbmat * fac
 
-# fastForwardFourierBesselTransform
-# fastInverseFourierBesselTransform
+
+
+def createField(nside, rgrid_bounds, phis_rad, thetas_rad, rs, vals=None):
+    anglocs = hp.ang2pix(nside, np.pi/2. - thetas_rad, phis_rad)
+
+    radlocs = np.zeros((rs.size, ), dtype=int)
+    for i in range(rgrid_bounds.size-1):
+        ind = np.logical_and(rs > rgrid_bounds[i], rs <= rgrid_bounds[i+1])
+        radlocs[ind] = i
+
+    sh = (hp.nside2npix(nside), rgrid_bounds.size-1)
+    totsize = hp.nside2npix(nside)*(rgrid_bounds.size-1)
+    flatlocs = np.ravel_multi_index([anglocs, radlocs], sh)
+
+    #countmap = np.zeros((hp.nside2npix(nside)*(rgrid_bounds.size-1)))
+    #print(flatlocs.max(), countmap.size, hp.nside2npix(nside)*(rgrid_bounds.size-1))
+    #countmap[flatlocs] += 1
+    countmap = np.bincount(flatlocs, minlength=totsize)
+    ind = countmap > 0
+    if vals is None:
+        return countmap.reshape(sh), anglocs, radlocs, flatlocs
+    else:
+        meanmap = np.bincount(flatlocs, weights=vals, minlength=totsize)
+        varmap = np.bincount(flatlocs, weights=vals**2, minlength=totsize)
+        meanmap[ind] = meanmap[ind] / countmap[ind]
+        varmap[ind] = (varmap[ind] - meanmap[ind]**2) / countmap[ind]
+        return countmap.reshape(sh), meanmap.reshape(sh), varmap.reshape(sh), anglocs, radlocs, flatlocs

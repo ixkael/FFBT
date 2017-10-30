@@ -8,15 +8,15 @@ from ffbt.fbt import *
 
 def test_fourierBesselMatrix():
     """Test slow Fourier-Bessel transform"""
-    rtol = 1e-1
+    rtol = 2e-1
     NREPEAT = 1
     for i in range(NREPEAT):
 
         R = np.random.uniform(1e-1, 1e2, 1)
 
         N = 4
-        Nr = 500
-        nside = 16
+        Nr = 1000
+        nside = 8
         L = nside // 4
 
         Npix = hp.nside2npix(nside)
@@ -35,19 +35,9 @@ def test_fourierBesselMatrix():
         # f_lmn is (Lt, N)
         # shamat is (Lt, N, Npix)
         # clnmat and sbtmat are (Lt, N, Nr)
-        f_angr = np.sum(
-            clnmat[:, :, None, None] *\
-            sbtmat[:, :, None, :] *\
-            shamat[:, None, :, None] *\
-            f_lmn_t[:, :, None, None],
-                axis=(0, 1))
+        f_angr = forwardFourierBesselTransformMatrix(f_lmn_t, clnmat, sbtmat, shamat)
         # f_angr is (Npix, Nr)
-        f_lmn = np.sqrt(2/np.pi) * np.sum(
-            domega * (dr*rs_grid_mid**2)[None, None, None, :] *\
-            sbtmat[:, :, None, :] *\
-            shamat[:, None, :, None].conjugate() *\
-            f_angr[None, None, :, :],
-                axis=(2, 3))
+        f_lmn = inverseFourierBesselTransformMatrix(f_angr, clnmat, sbtmat, shamat, domega, dr, rs_grid_mid)
         # f_lmn is (Lt, N)
 
         np.testing.assert_allclose(f_lmn, f_lmn_t, rtol=rtol)
