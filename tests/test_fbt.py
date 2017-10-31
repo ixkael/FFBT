@@ -40,12 +40,12 @@ def test_fourierBesselMatrix():
         f_lmn = inverseFourierBesselTransformMatrix(f_angr, clnmat, sbtmat, shamat, domega, dr, rs_grid_mid)
         # f_lmn is (Lt, N)
 
-        for l in range(L):
-            for m in range(l+1):
-                lm = m*(2*L-1-m)//2+l
-                for n in range(N):
-                    if np.abs(f_lmn[lm, n] - f_lmn_t[lm, n]) > 1e-5:
-                        print(l, m, n, f_lmn[lm, n], f_lmn_t[lm, n])
+        #for l in range(L):
+        #    for m in range(l+1):
+        #        lm = m*(2*L-1-m)//2+l
+        #        for n in range(N):
+        #            if np.abs(f_lmn[lm, n] - f_lmn_t[lm, n]) > 1e-5:
+        #                print(l, m, n, f_lmn[lm, n], f_lmn_t[lm, n])
 
         np.testing.assert_allclose(f_lmn, f_lmn_t, rtol=rtol, atol=1e-12)
 

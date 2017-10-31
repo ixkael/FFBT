@@ -8,11 +8,13 @@ from ffbt.sbt import *
 
 
 def forwardFourierBesselTransformMatrix(f_lmn, clnmat, sbtmat, shamat):
+    temp = shamat[:, None, :, None] * f_lmn[:, :, None, None]
+    L = int(-1 + np.sqrt(1 + 8*shamat.shape[0])) // 2
+    temp[np.arange(L), :, :, :] /= 2
     return np.sum(
         clnmat[:, :, None, None] *\
         sbtmat[:, :, None, :] *\
-        shamat[:, None, :, None] *\
-        f_lmn[:, :, None, None],
+        (temp + temp.conjugate()),
             axis=(0, 1))
 
 def inverseFourierBesselTransformMatrix(f_angr, clnmat, sbtmat, shamat, domega, dr, rs_grid_mid):
@@ -70,11 +72,7 @@ def fourierBesselTransformMatrices(L, N, R, nside, rs_grid_bounds):
     for l in range(L):
         for m in range(l+1):
             lm = m*(2*L-1-m)//2+l
-            if m == 0:
-                shamat[lm, :] = sph_harm(m, l, phis, thetas)
-            else:
-                shamat[lm, :] = 0.5*(sph_harm(m, l, phis, thetas) +
-                            (-1)**m * sph_harm(-m, l, phis, thetas).conjugate())
+            shamat[lm, :] = sph_harm(m, l, phis, thetas)
             #shamat[lm, :] = sph_harm(m, l, phis, thetas)
     domega = 4 * np.pi / Npix
 
