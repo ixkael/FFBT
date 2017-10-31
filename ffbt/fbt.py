@@ -70,7 +70,12 @@ def fourierBesselTransformMatrices(L, N, R, nside, rs_grid_bounds):
     for l in range(L):
         for m in range(l+1):
             lm = m*(2*L-1-m)//2+l
-            shamat[lm, :] = sph_harm(m, l, phis, thetas)
+            if m == 0:
+                shamat[lm, :] = sph_harm(m, l, phis, thetas)
+            else:
+                shamat[lm, :] = 0.5*(sph_harm(m, l, phis, thetas) +
+                            (-1)**m * sph_harm(-m, l, phis, thetas).conjugate())
+            #shamat[lm, :] = sph_harm(m, l, phis, thetas)
     domega = 4 * np.pi / Npix
 
     rs_grid_mid = (rs_grid_bounds[1:] + rs_grid_bounds[:-1])/2.
