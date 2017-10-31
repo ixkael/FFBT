@@ -7,7 +7,7 @@ from ffbt.sht import *
 from ffbt.sbt import *
 
 
-def forwardFourierBesselTransformMatrix(f_lmn, clnmat, sbtmat, shamat):
+def forwardFourierBesselTransformMatrix_real(f_lmn, clnmat, sbtmat, shamat):
     temp = shamat[:, None, :, None] * f_lmn[:, :, None, None]
     L = int(-1 + np.sqrt(1 + 8*shamat.shape[0])) // 2
     temp[np.arange(L), :, :, :] /= 2
@@ -15,6 +15,13 @@ def forwardFourierBesselTransformMatrix(f_lmn, clnmat, sbtmat, shamat):
         clnmat[:, :, None, None] *\
         sbtmat[:, :, None, :] *\
         (temp + temp.conjugate()),
+            axis=(0, 1))
+
+def forwardFourierBesselTransformMatrix(f_lmn, clnmat, sbtmat, shamat):
+    return np.sum(
+        clnmat[:, :, None, None] *\
+        sbtmat[:, :, None, :] *\
+        shamat[:, None, :, None] * f_lmn[:, :, None, None],
             axis=(0, 1))
 
 def inverseFourierBesselTransformMatrix(f_angr, clnmat, sbtmat, shamat, domega, dr, rs_grid_mid):

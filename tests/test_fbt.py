@@ -35,7 +35,10 @@ def test_fourierBesselMatrix():
         # f_lmn is (Lt, N)
         # shamat is (Lt, N, Npix)
         # clnmat and sbtmat are (Lt, N, Nr)
-        f_angr = forwardFourierBesselTransformMatrix(f_lmn_t, clnmat, sbtmat, shamat)
+        f_angr = forwardFourierBesselTransformMatrix_real(f_lmn_t, clnmat, sbtmat, shamat)
+
+        np.testing.assert_allclose(f_angr.imag, f_angr.real*0, rtol=rtol, atol=1e-12)
+
         # f_angr is (Npix, Nr)
         f_lmn = inverseFourierBesselTransformMatrix(f_angr, clnmat, sbtmat, shamat, domega, dr, rs_grid_mid)
         # f_lmn is (Lt, N)
